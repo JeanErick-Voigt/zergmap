@@ -200,7 +200,12 @@ int main(int argc, char *argv[])
 	//printf("This is after distane declared\n");
 ///////////////////////////////////// 	where i left off below
 	//printf("Before adjacency matrix\n");
-	int adjacency[*my_count + 1][*my_count + 2];
+	int **adjacency = malloc((*my_count + 1) * sizeof(int *));
+	for(int i = 0; i < *my_count + 1; i++){
+		adjacency[i] = (int *)malloc((*my_count + 2) * sizeof(int));
+	// this is statically allocated 2d array below
+	//int adjacency[*my_count + 1][*my_count + 2];
+	}
 	for(int i = 0; i < *my_count + 1; i++){
 		printf("In FOOOOORRRR LOOP %d\n", *my_count);
 		//if(i == 0){
@@ -262,7 +267,26 @@ int main(int argc, char *argv[])
 		} 
 		printf("\n");
 	} 
+//check the neighbor
+	for(int i = 0; i < *my_count; i++){
+		int count = 0;
+		for(int j = 0; j < *my_count; j++){
+			if(adjacency[i+1][j+1] == 1){
+				count++;
+			}else{
+				;
+			}
+		}
+		if(count >= 2){
+			nodes[i]->connected = 1;
+			printf("Node %d is %d\n", nodes[i]->id, nodes[i]->connected);
+		}else{
+			nodes[i]->connected = 0;
+			printf("Node %d is not connected\n", nodes[i]->id);
+		}
+	}
 
+//
 //////////////////////////	look above
 
 	distance = haversine_formula(root->longitude, root->latitude, root->altitude, root->left->longitude, root->left->latitude, root->left->altitude);
