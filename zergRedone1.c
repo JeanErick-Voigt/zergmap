@@ -284,13 +284,15 @@ int main(int argc, char *argv[])
 			nodes[i]->connected = 0;
 			printf("Node %d is not connected\n", nodes[i]->id);
 		}
+		printf("Debug statement\n");
 	}
+	printf("out of loop\n");
 
 //
 //////////////////////////	look above
 
-	distance = haversine_formula(root->longitude, root->latitude, root->altitude, root->left->longitude, root->left->latitude, root->left->altitude);
-	printf("This is distance between two points %lf\n", distance);
+	//distance = haversine_formula(root->longitude, root->latitude, root->altitude, root->left->longitude, root->left->latitude, root->left->altitude);
+	//printf("This is distance between two points %lf\n", distance);
 	printf("this is end\n");
 	printf("This is amount of nodes %d\n", *my_count);
 	fclose(fp1);
