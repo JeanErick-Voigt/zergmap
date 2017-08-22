@@ -235,10 +235,13 @@ int main(int argc, char *argv[])
 				//print connection
 				//example of format
 				//printf("i:%-4d", i); format example
+				//printf("This is node i and node j latitude %lf and logitude %lf and altitude %lf %lf %lf %lf\n", nodes[i-1]->longitude, nodes[i-1]->latitude, 
+				//	nodes[i - 1]->altitude, nodes[j-1]->longitude, nodes[j-1]->latitude, nodes[j-1]->altitude);
 				distance = haversine_formula(nodes[i-1]->longitude, nodes[i-1]->latitude, nodes[i-1]->altitude,
 					nodes[j-1]->longitude, nodes[j-1]->latitude, nodes[j-1]->altitude);
 				if(distance >= (1.25000 * .9144) && distance <= 15.00000){
 					adjacency[i][j] = 1;
+				//	printf("This is distance %lf\n", distance);
 				}else{
 					adjacency[i][j] = 0;
 				}
@@ -248,7 +251,7 @@ int main(int argc, char *argv[])
 		printf("\n");
 		//printf("nodes %d, latitude %lf, and longitude %lf\n", nodes[i]->id, nodes[i]->latitude, nodes[i]->longitude);
 	} 
-
+	printf("Before the print for adjacency matrix\n");
 	for(int i = 0; i < *my_count + 1; i++){
 		for(int j = 0; j < *my_count + 2; j++){
 			if(i == 0 || j == 0){
