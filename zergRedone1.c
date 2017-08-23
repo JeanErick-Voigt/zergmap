@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
 	int **temp_adjacency = malloc((*my_count + 1) * sizeof(int *));
 	for(int i = 0; i < *my_count + 1; i++){
 		adjacency[i] = (int *)malloc((*my_count + 2) * sizeof(int));
-		temp_adjacency = (int *)malloc((*my_count + 2) * sizeof(int));
+		temp_adjacency[i] = (int *)malloc((*my_count + 2) * sizeof(int));
 	// this is statically allocated 2d array below
 	//int adjacency[*my_count + 1][*my_count + 2];
 	}
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
 					adjacency[i][j] = nodes[j-1]->id;
 					//printf("%-6d", nodes[j-1]->id);
 				}else{
-					adjacency[i][j] = -1;
+					adjacency[i][j] = -5;
 					//printf("Debug2\n");
 				}
 			}
@@ -374,8 +374,12 @@ int main(int argc, char *argv[])
 	//printf("out of loop\n");
 
 //sets now
-	//for(int i = 0
-
+	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
+	for(int i = 0; i < *my_count; i++){
+		set_array[i] = i;
+		printf("%d\n", set_array[i]);
+	}
+	//for(int i 
 
 
 /////////////////////////////////////////	look above
