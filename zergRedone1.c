@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 //#include <stdint.h>
+#include <unistd.h>
+#include <getopt.h>
 #include <stddef.h>
 #include <math.h>
 #include "zerg2Structs1.h"
@@ -31,33 +33,71 @@ void init_array(BST **nodes, BST *root, int *count);
 int main(int argc, char *argv[])
 {
 	FILE *fp;
+
 	FILE *fp1;
+	int option = 0;
+//	char word[3] = "57";
+//	printf(
+	int val;
+	double hp_threshold = -1.00;
+	while((option = getopt(argc, argv, "h:")) != -1){
+		switch(option){
+			case 'h':
+				val = atoi(optarg);
+				//printf("getopt DEBUG 1 %d\n", (int)strlen(optarg));
+				for(int i = 0; i < (int)strlen(optarg); i++){
+					//printf("This is optarg ---------->>>>>>>%d\n", optarg[i]);
+					if(optarg[i] < 47 || optarg[i] > 57){
+						//printf("This is decimal of optarg ????????????%d\n", optarg[i]);
+						printf("%s is improper HP flag entry option for -h because of non integer character(s) or negative number."
+								" Program will exit\n", optarg);
+						exit(1);
+					}
+					//}else{
+						//hp_threshold = val;
+				}
+				hp_threshold = (double)(val/100);
+				break;
+			//default:
+				//hp_threshold = 10;
+				//printf("----------In hp_threshold\n");
+				//break;
+		}
+	}
+	if(hp_threshold < 0){ // no value was set so default is 10
+		hp_threshold = .10;
+	}
+
+	printf("\nThis is final hp threshold from the command line %lf\n", hp_threshold);
+
 	double newLong, newLat, alt32;
 	newLong = -181.00;
 	newLat = -91.00;
 	alt32 = 0;
 	int count = 0;
 	int *my_count = &count;
-	printf("This is mycount %d\n", *my_count);
+	//printf("This is mycount %d\n", *my_count);
 	*my_count += 1;
-	printf("This is mycount %d\n", *my_count);
+	//printf("This is mycount %d\n", *my_count);
 	*my_count -= 1;
-	printf("This is mycount %d\n", *my_count);
+	//printf("This is mycount %d\n", *my_count);
 	// BST root
 	struct BinarySearchTree *root = NULL;
 	// initialize hp and maxhp to pass as parameters in the case that you don't pass that type
 	int hitpoints,  maxhp;
 	hitpoints = maxhp = -1;
 	//TOPHEADER fileHeader	
-	for(int i  = 1; i < argc; i++){
-		fp = fopen(argv[i], "r");
-		if(fp == NULL){
-			printf("file does not exist %s\n", argv[i]);
-			exit(1);
-		}else{
-			fclose(fp);
-		}
-	}
+//	for(int i  = 1; i < argc; i++){
+//		fp = fopen(argv[i], "r");
+//		if(fp == NULL){
+			//printf("file does not exist %s\n", argv[i]);
+			//exit(1);
+			//printf("This is check\n");
+
+//		}else{
+//			fclose(fp);
+//		}
+//	}
 //	FILE *fp = fopen(argv[i], "r");
 //	if(argc > 2)
 //		printf("ARGC: %d\n", argc);
@@ -72,9 +112,35 @@ int main(int argc, char *argv[])
 	//int count = 0;
 
 	int fullSize;
+	if(argc < 2){
+		printf("Not enough arguments to proceed with\n");
+		exit(1);
+	}
+	for(int i = 1; i < argc; i++){
+		fp = fopen(argv[i], "r");
+		if(fp == NULL){
+			if((argv[i][0] == '-' && argv[i][1] != 'h') || (argv[i][0] != '-' && argv[i - 1][0] != '-')){
+				printf("%s is an improper command line argument\n", argv[i]);
+				printf("program will exit\n");
+				exit(1);
+			}
+		}else{
+			fclose(fp);
+		}
+	} 
+	printf("amount of argc arguments %d\n\n\n", argc);
 	for(int i = 1; i < argc; i++){
 		fp1 = fopen(argv[i], "r");
+		if(fp1 == NULL){
+			//if((argv[i][0] == '-' && argv[i][1] != 'h') || (argv[i][0] != '-' && argv[i - 1][0] != '-')){
+			//	printf("%s is an improper command line argument\n", argv[i]);
+			//	printf("program will exit\n");
+			//	exit(1);
+			//}
+			continue;
+		}
 		//TOPHEADER fileHeader;
+		//printf("out of command line check\n");
 		fullSize = fileSize(fp1);
 		TOPHEADER fileHeader;
 		fread(&fileHeader, sizeof(fileHeader), 1, fp1);
@@ -191,18 +257,33 @@ int main(int argc, char *argv[])
 	}
 
 	inorder(root, my_count);
+	if(*my_count == 0){
+		printf("This is before I exit\n");
+		exit(1);
+	}
 	BST **nodes = malloc(*my_count * sizeof(struct BinarySearchTree *));
 	for(int i = 0; i < *my_count; i++){
 		nodes[i] = malloc(sizeof(struct BinarySearchTree));
 	}
 	init_array(nodes, root, my_count);
+	// printf the hp's below the certain percentage
+		printf("Below health (%lf%%)\n", (hp_threshold * 100));
+		for(int i = 0; i < *my_count; i++){
+			if(nodes[i]-> hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
+				printf("zerg #%d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
+			}
+		}
+	//look above for this
+
 	double distance;
 	//printf("This is after distane declared\n");
-///////////////////////////////////// 	where i left off below
+/////////////////////////////////////////////////////// 	where i left off below
 	//printf("Before adjacency matrix\n");
 	int **adjacency = malloc((*my_count + 1) * sizeof(int *));
+	int **temp_adjacency = malloc((*my_count + 1) * sizeof(int *));
 	for(int i = 0; i < *my_count + 1; i++){
 		adjacency[i] = (int *)malloc((*my_count + 2) * sizeof(int));
+		temp_adjacency = (int *)malloc((*my_count + 2) * sizeof(int));
 	// this is statically allocated 2d array below
 	//int adjacency[*my_count + 1][*my_count + 2];
 	}
@@ -235,7 +316,7 @@ int main(int argc, char *argv[])
 				//printf("%-6d", nodes[i-1]->id);
 			}
 			else if(j == *my_count + 1){
-				adjacency[i][j] = -1;
+				adjacency[i][j] = -5;
 			}else{
 				//print connection
 				//example of format
@@ -266,7 +347,7 @@ int main(int argc, char *argv[])
 			}
 		} 
 		printf("\n");
-	} 
+	}
 //check the neighbor
 	for(int i = 0; i < *my_count; i++){
 		int count = 0;
@@ -278,24 +359,34 @@ int main(int argc, char *argv[])
 			}
 		}
 		if(count >= 2){
-			nodes[i]->connected = 1;
+			nodes[i]->connected = count;
 			printf("Node %d is %d\n", nodes[i]->id, nodes[i]->connected);
 		}else{
 			nodes[i]->connected = 0;
+			for(int j = 1; j < *my_count + 1; j++){
+				adjacency[i+1][j] = -1;
+				adjacency[j][i+1] = -1;
+			} 
 			printf("Node %d is not connected\n", nodes[i]->id);
 		}
 		printf("Debug statement\n");
 	}
-	printf("out of loop\n");
+	//printf("out of loop\n");
 
-//
-//////////////////////////	look above
+//sets now
+	//for(int i = 0
 
-	//distance = haversine_formula(root->longitude, root->latitude, root->altitude, root->left->longitude, root->left->latitude, root->left->altitude);
-	//printf("This is distance between two points %lf\n", distance);
+
+
+/////////////////////////////////////////	look above
+
 	printf("this is end\n");
-	printf("This is amount of nodes %d\n", *my_count);
-	fclose(fp1);
+	//printf("This is amount of nodes %d\n", *my_count);
+	printf("This is last statement\n");
+	if(fp1 != NULL){
+		fclose(fp1);
+	}
+	printf("After the fclose ----------------\n\n");
 	return(0);
 }
 
@@ -354,11 +445,11 @@ void inorder(BST *root, int *count)
 	//static *count;
 	//printf("This is count %d\n", *count);
 	//printf("This is inorder function");
-	printf("This is in function\n");
+	//printf("This is in function\n");
 	if(root != NULL){
 		//printf("BEFORE COUNT \n");
 		//(*count) += 1;
-		printf("This is count %d\n", *count);
+		//printf("This is count %d\n", *count);
 		//printf("This is count %d\n", *count);
 		inorder(root->left, count);
 		(*count) += 1;
@@ -383,6 +474,9 @@ void inorder(BST *root, int *count)
 		
 		inorder(root->right, count);
 	}
+	//if(*my_count == 0){
+	//	printf("Error not enough nodes\n");
+	//}
 	//printf("This is value of count %d\n", *count);
 }
 
