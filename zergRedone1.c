@@ -28,7 +28,8 @@ int GetVersion(FILE *fp);
 double haversine_formula(double longitude1, double latitude1, double altitude1, double longitude2, double latitude2, double altitude2);
 //void checkTree(struct BinarySearchTree **root, double longitude, double altitude, double latitude, int id, int type, int hp, int maxhp);
 void init_array(BST **nodes, BST *root, int *count);
-
+void neighbor_count_per_node(BST *array[], int *node_count, int **matrix);
+int node_neighbor_removal(BST *array[], int *node_count, int **matrix);
 
 int main(int argc, char *argv[])
 {
@@ -351,8 +352,9 @@ int main(int argc, char *argv[])
 		} 
 		printf("\n");
 	}
-//check the neighbor
-	for(int i = 0; i < *my_count; i++){
+//check the neighbor // comment out to check if neighbor function works
+	
+/*	for(int i = 0; i < *my_count; i++){
 		int count = 0;
 		for(int j = 0; j < *my_count; j++){
 			if(adjacency[i+1][j+1] == 1){
@@ -374,7 +376,19 @@ int main(int argc, char *argv[])
 		}
 		printf("Debug statement\n");
 	}
-	//printf("out of loop\n");
+*/	//printf("out of loop\n");
+
+
+//////// Above commmented out to check if neighbor function works
+neighbor_count_per_node(nodes, my_count, adjacency);
+//print updated node adjacency after function call
+
+	for(int i = 0; i < *my_count + 1; i++){
+		for(int j = 0; j < *my_count + 2; j++){
+			printf("%-6d", adjacency[i][j]);
+		}
+		printf("\n");
+	}
 
 //sets now
 	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
@@ -390,10 +404,11 @@ int main(int argc, char *argv[])
 			}else{
 				if(adjacency[i+1][j+1] == 1){
 					if(set_array[i] < set_array[j]){
-						set_array[j] = i;
+						set_array[j] = set_array[i];
+						//printf("This is set_array j after reset value %d\n", set_array[j]);
 					}
 					else if(set_array[i] > set_array[j]){
-						set_array[i] = j;
+						set_array[i] = set_array[j];
 					}else{
 						continue;
 					}
@@ -424,6 +439,102 @@ int main(int argc, char *argv[])
 	return(0);
 }
 
+void neighbor_count_per_node(BST *array[], int *node_count, int **matrix)
+{
+	double removal;
+	int nodes = 1;
+	int neighbor_check;
+	//int removal_num = 0;
+	while(nodes > 0){
+		neighbor_check = 0;
+		for(int i = 0; i < *node_count; i++){
+			int count = 0;
+			//printf("This is count variable %d\n");
+			for(int j = 0; j < *node_count; j++){
+				if(matrix[i+1][j+1] == 1){
+					printf("This is matrix variable %d\n", matrix[i+1][j+1]);
+					count++;
+					//removal_num++;
+				}else{
+					;
+				}
+			}
+			array[i]->connected = count;
+			printf("This is nodes connectivity %d for array[i]: %d\n", array[i]->connected, array[i]->id);
+			//printf("Array node %d and amount of edges %d\n", array[i]->id, array[i]->connected);
+			//printf("node connectivity:  %d\n", array[i]->connected);
+		}
+		for(int i = 0; i < *node_count; i++){
+			if(array[i]->connected >= 2){
+				neighbor_check++;
+			}
+		}
+		if(neighbor_check == *node_count){
+			nodes = 0;
+			printf("Nodes should not be 0 anymore\n");
+			break;
+		}else{
+			printf("Before Removal statement\n");
+			removal = node_neighbor_removal(array, node_count, matrix);
+			if(removal >= 0 && removal <= .001){
+				nodes = 0;
+				printf("Got to node equals zero break statement\n");
+				break;
+			}else{
+				printf("This is removal number %lf\n", removal);
+				break;
+			}
+		}	//return removal_num;
+		printf("After last big else in function after removal run\n");
+	}
+}
+
+int node_neighbor_removal(BST *array[], int *node_count, int **matrix)
+{
+	static int function_call = 0;
+	static double total_removed = 0;
+	double removal = 0;
+	if((total_removed / *node_count) >= .5){
+		printf("To many removals required, should try to add nodes instead\n");
+		return(removal);
+	}
+	for(int i = 0; i < *node_count; i++){
+		if(array[i]->connected < 2){
+			removal++;
+		}
+	}
+	printf("Amount to be removed %lf\n", removal);
+//	printf("This is node count %d\n", *node_count);
+	printf("This is removal / *node_count: %.3lf\n", removal / *node_count);
+	if(((removal / *node_count) >= .5) || ((total_removed / *node_count) >= .5)){
+		printf("All nodes do not have enough neighbors.  But removal would cause more than 50%% of nodes to be removed\n");
+		printf("Might want to add nodes instead\n");
+	}else if(((removal / *node_count) > 0) && ((total_removed / *node_count) >= 0)){
+		for(int i = 0; i < *node_count; i++){
+			if(array[i]-> connected < 2 && array[i]->connected > 0){
+				//array[i]->connected = 0;
+				for(int j = 0; j < *node_count + 1; j++){
+					array[i]->connected = 0;
+					matrix[i+1][j + 1] = -1;
+					if(j < *node_count){
+						matrix[j][i+1] = -1;
+					}else{
+						break;
+					}
+				}
+			}
+		}
+		printf("This is print statement\n");
+	}else{
+		printf("This is final else statement\n");
+		printf("This is removal numbers for total removed %lf\n", total_removed);
+		;
+		//do nothing
+		//return(removal);
+	}
+	printf("Function call %d\n", function_call);
+	return(removal);
+}
 
 void init_array(BST **nodes, BST *root, int *count)
 {
