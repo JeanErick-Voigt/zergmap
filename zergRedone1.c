@@ -38,12 +38,13 @@ int main(int argc, char *argv[])
 	int option = 0;
 //	char word[3] = "57";
 //	printf(
-	int val;
+	double val;
 	double hp_threshold = -1.00;
 	while((option = getopt(argc, argv, "h:")) != -1){
 		switch(option){
 			case 'h':
-				val = atoi(optarg);
+				val = (double)atoi(optarg);
+				printf("THis is val %d\n", val);
 				//printf("getopt DEBUG 1 %d\n", (int)strlen(optarg));
 				for(int i = 0; i < (int)strlen(optarg); i++){
 					//printf("This is optarg ---------->>>>>>>%d\n", optarg[i]);
@@ -56,6 +57,8 @@ int main(int argc, char *argv[])
 					//}else{
 						//hp_threshold = val;
 				}
+				//printf("This is val again out of loop %d\n", val);
+				//printf("This is val divided by 100 %d\n", val/100);
 				hp_threshold = (double)(val/100);
 				break;
 			//default:
@@ -179,7 +182,7 @@ int main(int argc, char *argv[])
 
 			UDP udp;
 			fread(&udp, sizeof(udp), 1, fp1);
-			printf("Size of udp %d\n", sizeof(udp));
+			printf("Size of udp %ld\n", sizeof(udp));
 			ZERG zerg;
 			fread(&zerg, sizeof(zerg), 1, fp1);
 
@@ -377,10 +380,37 @@ int main(int argc, char *argv[])
 	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
 	for(int i = 0; i < *my_count; i++){
 		set_array[i] = i;
-		printf("%d\n", set_array[i]);
+		//printf("%d\n", set_array[i]);
 	}
-	//for(int i 
+	// go through set and update for reachability based on array connections.
+	for(int i = 0; i < *my_count; i++){
+		for(int j = 0; j < *my_count; j++){
+			if((i + 1) == (j + 1)){
+				continue;
+			}else{
+				if(adjacency[i+1][j+1] == 1){
+					if(set_array[i] < set_array[j]){
+						set_array[j] = i;
+					}
+					else if(set_array[i] > set_array[j]){
+						set_array[i] = j;
+					}else{
+						continue;
+					}
+				}else{
+					continue;
+				}
+			}
+		}
+	}
 
+	printf("These are updated sets\n");
+	for(int i = 0; i < *my_count; i++){
+		printf("%d", set_array[i]);
+	}
+
+	// remove zergs based on reachability and or sets
+	printf("\n This is after sets printed out\n");
 
 /////////////////////////////////////////	look above
 
