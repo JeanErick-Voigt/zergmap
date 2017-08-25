@@ -868,3 +868,50 @@ int endLength(uint32_t packet, FILE *fp)
 	fseek(fp, -packetLength, SEEK_CUR);
 	return(length);
 }
+
+
+
+
+
+
+
+
+
+
+/////
+//sets now
+	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
+	for(int i = 0; i < *my_count; i++){
+		set_array[i] = i;
+		//printf("%d\n", set_array[i]);
+	}
+	// go through set and update for reachability based on array connections.
+	for(int i = 0; i < *my_count; i++){
+		for(int j = 0; j < *my_count; j++){
+			if((i + 1) == (j + 1)){
+				continue;
+			}else{
+				if(adjacency[i+1][j+1] == 1){
+					if(set_array[i] < set_array[j]){
+						set_array[j] = set_array[i];
+						//printf("This is set_array j after reset value %d\n", set_array[j]);
+					}
+					else if(set_array[i] > set_array[j]){
+						set_array[i] = set_array[j];
+					}else{
+						continue;
+					}
+				}else{
+					continue;
+				}
+			}
+		}
+	}
+
+	printf("These are updated sets\n");
+	for(int i = 0; i < *my_count; i++){
+		printf("%d", set_array[i]);
+	}
+
+	// remove zergs based on reachability and or sets
+	printf("\n This is after sets printed out\n");
