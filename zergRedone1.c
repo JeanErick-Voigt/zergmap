@@ -30,6 +30,10 @@ double haversine_formula(double longitude1, double latitude1, double altitude1, 
 void init_array(BST **nodes, BST *root, int *count);
 void neighbor_count_per_node(BST *array[], int *node_count, int **matrix);
 void node_neighbor_removal(int row, int *node_count, int **matrix);
+void make_set_array(int *set_array, int *node_count, int **matrix);
+int find_largest_set(int *array, int *node_count);
+void print_matrix(int **matrix, int *node_count);
+int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_count, int **matrix);
 
 int main(int argc, char *argv[])
 {
@@ -179,7 +183,7 @@ int main(int argc, char *argv[])
 				fseek(fp1, -1, SEEK_CUR);
 				int ipLength = NTOH2(internetProtocol.iptotalLength);
 			}
-		
+
 
 			UDP udp;
 			fread(&udp, sizeof(udp), 1, fp1);
@@ -342,57 +346,21 @@ int main(int argc, char *argv[])
 		//printf("nodes %d, latitude %lf, and longitude %lf\n", nodes[i]->id, nodes[i]->latitude, nodes[i]->longitude);
 	} 
 	printf("Before the print for adjacency matrix\n");
-	for(int i = 0; i < *my_count + 1; i++){
-		for(int j = 0; j < *my_count + 2; j++){
-			if(i == 0 || j == 0){
-				printf("%-6d", adjacency[i][j]);
-			}else{
-				printf("%-6d", adjacency[i][j]);
-			}
-		} 
-		printf("\n");
-	}
-//check the neighbor // comment out to check if neighbor function works
-	
-/*	for(int i = 0; i < *my_count; i++){
-		int count = 0;
-		for(int j = 0; j < *my_count; j++){
-			if(adjacency[i+1][j+1] == 1){
-				count++;
-			}else{
-				;
-			}
-		}
-		if(count >= 2){
-			nodes[i]->connected = count;
-			printf("Node %d is %d\n", nodes[i]->id, nodes[i]->connected);
-		}else{
-			nodes[i]->connected = 0;
-			for(int j = 1; j < *my_count + 1; j++){
-				adjacency[i+1][j] = -1;
-				adjacency[j][i+1] = -1;
-			} 
-			printf("Node %d is not connected\n", nodes[i]->id);
-		}
-		printf("Debug statement\n");
-	}
-*/	//printf("out of loop\n");
-
+	print_matrix(adjacency, my_count);
 
 //////// Above commmented out to check if neighbor function works
-neighbor_count_per_node(nodes, my_count, adjacency);
-//print updated node adjacency after function call
-
-	for(int i = 0; i < *my_count + 1; i++){
-		for(int j = 0; j < *my_count + 2; j++){
-			printf("%-6d", adjacency[i][j]);
-		}
-		printf("\n");
-	}
+	neighbor_count_per_node(nodes, my_count, adjacency);
+	print_matrix(adjacency, my_count);
 
 //sets now
 	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
-	for(int i = 0; i < *my_count; i++){
+// try the function instead of this above to set array
+	make_set_array(set_array, my_count, adjacency);
+	int set_pos;
+	set_pos = find_largest_set(set_array, my_count); //this returns set position
+	remove_smallest_set(set_array, set_pos, nodes, my_count, adjacency);
+	print_matrix(adjacency, my_count); 
+/*	for(int i = 0; i < *my_count; i++){
 		set_array[i] = i;
 		//printf("%d\n", set_array[i]);
 	}
@@ -418,7 +386,7 @@ neighbor_count_per_node(nodes, my_count, adjacency);
 			}
 		}
 	}
-
+*/
 	printf("These are updated sets\n");
 	for(int i = 0; i < *my_count; i++){
 		printf("%d", set_array[i]);
@@ -436,6 +404,54 @@ neighbor_count_per_node(nodes, my_count, adjacency);
 		fclose(fp1);
 	}
 	printf("After the fclose ----------------\n\n");
+	return(0);
+}
+
+void print_matrix(int **matrix, int *node_count)
+{
+	for(int i = 0; i < *node_count + 1; i++){
+		for(int j = 0; j < *node_count + 2; j++){
+			printf("%-6d", matrix[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+int find_largest_set(int *array, int *node_count)
+{
+	int high_set, reverse_value, count, forward_value, set_pos;
+	count = 0;
+	high_set = 1;
+	set_pos = -1;
+	reverse_value = 0;
+	for(int index = 0; index < *node_count; index++){
+		if( index > 0){
+			reverse_value = index;
+		}
+		for(; reverse_value >= 0; reverse_value--){
+			if(index == 0){
+				count = 0;
+				break;
+			}
+			else if(array[index] == array[reverse_value]){
+				count = 0;
+				break;
+			}
+		}
+		for(forward_value = 0; forward_value < *node_count; forward_value++){
+
+			if(array[index] == array[forward_value]){
+				count++;
+			}else{
+				continue;
+			}
+		}
+		if(high_set < count){
+			high_set = count;
+			set_pos = array[index];
+		}
+	}
+	printf("This is set with most matches %d\n", set_pos);
 	return(0);
 }
 
@@ -485,7 +501,7 @@ void neighbor_count_per_node(BST *array[], int *node_count, int **matrix)
 		}
 		//printf("This is total_qualified_nodes %d\n", total_qualified_nodes);
 		if(total_qualified_nodes == *node_count){
-			printf("All nodes have at least two neighbors");
+			printf("All nodes have at least two neighbors\n");
 			node_removal = 0;
 			break;
 		}else{
@@ -542,6 +558,27 @@ void neighbor_count_per_node(BST *array[], int *node_count, int **matrix)
 	}
 }
 */
+int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_count, int **matrix)
+{
+	int largest_set_size = 0;
+	for(int i = 0; i < *node_count; i++){
+		if(set_pos == set_array[i]){
+			largest_set_size++;
+		}
+	}
+	if((largest_set_size / *node_count) < .50){
+		printf("To many nodes to remove based on reachability may want to add nodes instead\n");
+		return(0); // 0 indicates nothing removed
+	}
+	for(int i = 0; i < *node_count; i++){
+		if(set_array[i] != set_pos){
+			node[i]->connected = 0;
+			node_neighbor_removal(i+1, node_count, matrix);
+		}
+	}
+	return(1);
+}
+
 void node_neighbor_removal(int row, int *node_count, int **matrix)
 {
 //	static int function_call = 0
@@ -868,3 +905,47 @@ int endLength(uint32_t packet, FILE *fp)
 	fseek(fp, -packetLength, SEEK_CUR);
 	return(length);
 }
+
+
+
+
+
+/////////////////////////
+
+//int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
+void make_set_array(int *set_array, int *node_count, int **matrix)
+{
+	for(int i = 0; i < *node_count; i++){
+		set_array[i] = i;
+		//printf("%d\n", set_array[i]);
+	}
+	// go through set and update for reachability based on array connections.
+	for(int i = 0; i < *node_count; i++){
+		for(int j = 0; j < *node_count; j++){
+			if((i + 1) == (j + 1)){
+				continue;
+			}else{
+				if(matrix[i+1][j+1] == 1){
+					if(set_array[i] < set_array[j]){
+						set_array[j] = set_array[i];
+						//printf("This is set_array j after reset value %d\n", set_array[j]);
+					}
+					else if(set_array[i] > set_array[j]){
+						set_array[i] = set_array[j];
+					}else{
+						continue;
+					}
+				}else{
+					continue;
+				}
+			}
+		}
+	}
+}
+	//printf("These are updated sets\n");
+	//for(int i = 0; i < *my_count; i++){
+	//	printf("%d", set_array[i]);
+	//}
+
+	// remove zergs based on reachability and or sets
+	//printf("\n This is after sets printed out\n");
