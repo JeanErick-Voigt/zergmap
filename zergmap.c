@@ -12,7 +12,7 @@
 #define NTOH3(x) ((int) x[0] << 16) | ((int) (x[1]) << 8) | ((int) (x[2]))
 #define NTOH4(x) ((int) x[0] << 24) | ((int) (x[1]) << 16) | ((int) (x[2]) <<  8) | ((int) (x[3]))
 
-//char *zergBreed(int breedType);
+char *zergBreed(int breedType);
 long unsigned swap32(long unsigned val);
 char * commandOption(int instruction);
 uint64_t ntoh64(uint8_t number[8]);
@@ -28,7 +28,7 @@ int GetVersion(FILE *fp);
 double haversine_formula(double longitude1, double latitude1, double altitude1, double longitude2, double latitude2, double altitude2);
 //void checkTree(struct BinarySearchTree **root, double longitude, double altitude, double latitude, int id, int type, int hp, int maxhp);
 void init_array(BST **nodes, BST *root, int *count);
-int neighbor_count_per_node(BST *array[], int *node_count, int **matrix);
+void neighbor_count_per_node(BST *array[], int *node_count, int **matrix);
 void node_neighbor_removal(int row, int *node_count, int **matrix);
 void make_set_array(int *set_array, int *node_count, int **matrix);
 int find_largest_set(int *array, int *node_count);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 		switch(option){
 			case 'h':
 				val = (double)atoi(optarg);
-	//			printf("THis is val %d\n", val);
+				printf("THis is val %d\n", val);
 				//printf("getopt DEBUG 1 %d\n", (int)strlen(optarg));
 				for(int i = 0; i < (int)strlen(optarg); i++){
 					//printf("This is optarg ---------->>>>>>>%d\n", optarg[i]);
@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
 		hp_threshold = .10;
 	}
 
+	printf("\nThis is final hp threshold from the command line %lf\n", hp_threshold);
 
 	double newLong, newLat, alt32;
 	newLong = -181.00;
@@ -83,12 +84,40 @@ int main(int argc, char *argv[])
 	alt32 = 0;
 	int count = 0;
 	int *my_count = &count;
+	//printf("This is mycount %d\n", *my_count);
+	*my_count += 1;
+	//printf("This is mycount %d\n", *my_count);
+	*my_count -= 1;
+	//printf("This is mycount %d\n", *my_count);
+	// BST root
 	struct BinarySearchTree *root = NULL;
 	// initialize hp and maxhp to pass as parameters in the case that you don't pass that type
 	int hitpoints,  maxhp;
 	hitpoints = maxhp = -1;
+	//TOPHEADER fileHeader	
+//	for(int i  = 1; i < argc; i++){
+//		fp = fopen(argv[i], "r");
+//		if(fp == NULL){
+			//printf("file does not exist %s\n", argv[i]);
+			//exit(1);
+			//printf("This is check\n");
+
+//		}else{
+//			fclose(fp);
+//		}
+//	}
+//	FILE *fp = fopen(argv[i], "r");
+//	if(argc > 2)
+//		printf("ARGC: %d\n", argc);
+	//if (fp == NULL){
+	//	printf("file does not exist\n");
+	//	exit(1);
+	//}
 
 	
+	//int fullSize = fileSize(fp); 
+	//fread(&fileHeader, sizeof(fileHeader), 1, fp);
+	//int count = 0;
 
 	int fullSize;
 	if(argc < 2){
@@ -107,30 +136,46 @@ int main(int argc, char *argv[])
 			fclose(fp);
 		}
 	} 
+	printf("amount of argc arguments %d\n\n\n", argc);
 	for(int i = 1; i < argc; i++){
 		fp1 = fopen(argv[i], "r");
 		if(fp1 == NULL){
+			//if((argv[i][0] == '-' && argv[i][1] != 'h') || (argv[i][0] != '-' && argv[i - 1][0] != '-')){
+			//	printf("%s is an improper command line argument\n", argv[i]);
+			//	printf("program will exit\n");
+			//	exit(1);
+			//}
 			continue;
 		}
+		//TOPHEADER fileHeader;
+		//printf("out of command line check\n");
 		fullSize = fileSize(fp1);
 		TOPHEADER fileHeader;
 		fread(&fileHeader, sizeof(fileHeader), 1, fp1);
 		while(ftell(fp1) < fullSize)
 		{
+			//TOPHEADER fileHeader;
+			//fread(&fileHeader, sizeof(fileHeader), 1, fp);
+			//printf("Beginning of while loop\n");
 
 			PACKETHEADER packet;
 			fread(&packet, sizeof(packet), 1, fp1);
 			int packetLength;
 			packetLength = endLength(packet.lengthDataCaptured, fp1);
-
+		
 			ETHERNET ether;
 			fread(&ether, sizeof(ether), 1, fp1);
 
 			int ipVersion;
 			ipVersion = GetVersion(fp1);
+			//uint8_t version;
+			//fread(&version, sizeof(version), 1, fp);
+			//ipVersion = version >> 4;
+			printf("This is version ip version %d\n", ipVersion);
+
 
 			IPV4 internetProtocol;
-
+		
 			if(ipVersion != 4){
 				fseek(fp1, 39, SEEK_CUR);
 			}else{
@@ -142,9 +187,10 @@ int main(int argc, char *argv[])
 
 			UDP udp;
 			fread(&udp, sizeof(udp), 1, fp1);
-
+			printf("Size of udp %ld\n", sizeof(udp));
 			ZERG zerg;
 			fread(&zerg, sizeof(zerg), 1, fp1);
+
 
 			int zergSourceID = NTOH2(zerg.sourceZergID);
 			int zergDestinationID = NTOH2(zerg.destinationZergID);
@@ -154,15 +200,14 @@ int main(int argc, char *argv[])
 			int type = zerg.versionToType & 0xF;  // This is type of message
 			int zergVersion = zerg.versionToType >> 4;  // This is version
 			STATUSPAYLOAD status;
+			printf("From : %d\n", zergSourceID);
+			printf("To : %d\n", zergDestinationID);
 
 			GPS gpsDataPayload;
-			COMMAND command;
-			uint16_t parameter1;
-			uint8_t parameter2[4];
 
 			char *messagePayload = (char*) malloc((messageLength + 1) * sizeof(char));
 			messagePayload[messageLength] = '\0';
-
+			//printf("This is message length %d\n", messageLength);
 			switch(type)
 			{
 				case 1:   //status payload
@@ -174,14 +219,13 @@ int main(int argc, char *argv[])
 					uint32_t  speed = NTOH4(status.speed);
 					hitpoints = NTOH3(status.hitPoints);
 					maxhp = NTOH3(status.maxHitPoints);
-					//printf("Hp      : %d/%d\n", hitpoints, maxhp);
-					//printf("Name: %s\n", zergBreed(statusType));
+					printf("Hp      : %d/%d\n", hitpoints, maxhp);
+					printf("Name: %s\n", zergBreed(statusType));
 					//printf("Armor   : %d\n", status.armor);
 					double nSpeed = convert32ToDouble(speed);
 					//printf("Speed   : %lfm/s\n", nSpeed);
 					//printf("Gets to break statement\n");
 					break;
-
 				case 3:
 					fread(&gpsDataPayload, sizeof(gpsDataPayload), 1, fp1);
 					uint64_t lat = ntoh64(gpsDataPayload.latitude);
@@ -190,7 +234,7 @@ int main(int argc, char *argv[])
 					uint64_t longitude = ntoh64(gpsDataPayload.longitude);
 					//printf("This is longitude %ld\n", longitude);
 					newLong = (double)convert64ToDouble(longitude);
-					//printf("This is longitude %lf\n", newLong);
+					printf("This is longitude %lf\n", newLong);
 
 					uint32_t altitude = NTOH4(gpsDataPayload.altitude);
 					alt32 = (double)convert32ToDouble(altitude);
@@ -205,11 +249,6 @@ int main(int argc, char *argv[])
 					double acc = convert32ToDouble(accuracy);
 
 					break;
-				
-				default:
-					fseek(fp1, messageLength, SEEK_CUR);
-					printf("%d is an incorrect payload type.\n", type);
-					
 			}
 			int difference = packetLength - ftell(fp1);
 			if(difference != 0){
@@ -219,16 +258,15 @@ int main(int argc, char *argv[])
 			if (root == NULL){    // if checktree doesn't work revert back to this function
 				root = init_tree(newLong, alt32, newLat, zergSourceID, hitpoints, maxhp);
 			}else{
-				if(type == 1 || type == 3){
-					tree_insert(root, newLong, alt32, newLat, zergSourceID, hitpoints, maxhp, type);
-				}
+				tree_insert(root, newLong, alt32, newLat, zergSourceID, hitpoints, maxhp, type);
 			}
+
 		}
 	}
 
 	inorder(root, my_count);
 	if(*my_count == 0){
-		printf("No nodes present in pcaps. Program will exit\n");
+		printf("This is before I exit\n");
 		exit(1);
 	}
 	BST **nodes = malloc(*my_count * sizeof(struct BinarySearchTree *));
@@ -236,7 +274,7 @@ int main(int argc, char *argv[])
 		nodes[i] = malloc(sizeof(struct BinarySearchTree));
 	}
 	init_array(nodes, root, my_count);
-
+	// printf the hp's below the certain percentage
 		printf("Below health (%lf%%)\n", (hp_threshold * 100));
 		for(int i = 0; i < *my_count; i++){
 			if(nodes[i]-> hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
@@ -258,17 +296,21 @@ int main(int argc, char *argv[])
 	//int adjacency[*my_count + 1][*my_count + 2];
 	}
 	for(int i = 0; i < *my_count + 1; i++){
+		printf("In FOOOOORRRR LOOP %d\n", *my_count);
+		//if(i == 0){
+			//printf("     "
+		//}else{
+			//printf("Node %-6d", nodes[i]->id);
 		for(int j = 0;  j < *my_count + 2; j++){
 			//printf("This is  i value %d\n", i);
-			if(i == 0 && j == 0){
+			if(i == 0 && j == 0){		
 				adjacency[0][0] = -5;
 				//printf("      ");
 			}
 			else if(i == 0 && j != 0){
 				//printf("DEBUG %d", j);
 				//adjacency[i][j] = nodes[j-1]->id;
-				if(j < *my_count + 1 && fabs(nodes[j-1]->altitude) <= 6160 && fabs(nodes[j-1]->latitude) <= 90
-				    && fabs(nodes[j-1]->longitude) <= 180){
+				if(j < *my_count + 1){
 					adjacency[i][j] = nodes[j-1]->id;
 					//printf("%-6d", nodes[j-1]->id);
 				}else{
@@ -278,12 +320,7 @@ int main(int argc, char *argv[])
 			}
 			else if(i != 0 && j == 0){
 				//printf("DEBUG2\n");
-				if(fabs(nodes[i-1]->altitude) <= 6160 && fabs(nodes[i-1]->latitude) <= 90
-				     && fabs(nodes[i-1]->longitude) <= 180){
-					adjacency[i][j] = nodes[i-1]->id;
-				}else{
-					adjacency[i][j] = -5;
-				}
+				adjacency[i][j] = nodes[i-1]->id;
 				//printf("%-6d", nodes[i-1]->id);
 			}
 			else if(j == *my_count + 1){
@@ -308,42 +345,55 @@ int main(int argc, char *argv[])
 		printf("\n");
 		//printf("nodes %d, latitude %lf, and longitude %lf\n", nodes[i]->id, nodes[i]->latitude, nodes[i]->longitude);
 	} 
-	//printf("Before the print for adjacency matrix\n");
-	//print_matrix(adjacency, my_count);
+	printf("Before the print for adjacency matrix\n");
+	print_matrix(adjacency, my_count);
 
 //////// Above commmented out to check if neighbor function works
-	//neighbor_count_per_node(nodes, my_count, adjacency);
-	// move neigh_count after set
+	neighbor_count_per_node(nodes, my_count, adjacency);
 	print_matrix(adjacency, my_count);
 
 //sets now
-	int removed, neighbors;
 	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
 // try the function instead of this above to set array
 	make_set_array(set_array, my_count, adjacency);
 	int set_pos;
 	set_pos = find_largest_set(set_array, my_count); //this returns set position
-	removed = remove_smallest_set(set_array, set_pos, nodes, my_count, adjacency);
-	//printf("Set to be removed\n");
-	neighbors = neighbor_count_per_node(nodes, my_count, adjacency);
-	if(removed == 0 && neighbors == 1){
-		for(int i = 0; i < *my_count; i++){
-			if(nodes[i]-> connected == -1){
-				printf("ZERG ID #%d removed\n", nodes[i]->id);
-			}else{
+	remove_smallest_set(set_array, set_pos, nodes, my_count, adjacency);
+	print_matrix(adjacency, my_count); 
+/*	for(int i = 0; i < *my_count; i++){
+		set_array[i] = i;
+		//printf("%d\n", set_array[i]);
+	}
+	// go through set and update for reachability based on array connections.
+	for(int i = 0; i < *my_count; i++){
+		for(int j = 0; j < *my_count; j++){
+			if((i + 1) == (j + 1)){
 				continue;
+			}else{
+				if(adjacency[i+1][j+1] == 1){
+					if(set_array[i] < set_array[j]){
+						set_array[j] = set_array[i];
+						//printf("This is set_array j after reset value %d\n", set_array[j]);
+					}
+					else if(set_array[i] > set_array[j]){
+						set_array[i] = set_array[j];
+					}else{
+						continue;
+					}
+				}else{
+					continue;
+				}
 			}
 		}
 	}
-	print_matrix(adjacency, my_count); 
-
-	//printf("These are updated sets\n");
-	//for(int i = 0; i < *my_count; i++){
-	//	printf("%d", set_array[i]);
-	//}
+*/
+	printf("These are updated sets\n");
+	for(int i = 0; i < *my_count; i++){
+		printf("%d", set_array[i]);
+	}
 
 	// remove zergs based on reachability and or sets
-	//printf("\n This is after sets printed out\n");
+	printf("\n This is after sets printed out\n");
 
 /////////////////////////////////////////	look above
 
@@ -353,7 +403,7 @@ int main(int argc, char *argv[])
 	if(fp1 != NULL){
 		fclose(fp1);
 	}
-	//printf("After the fclose ----------------\n\n");
+	printf("After the fclose ----------------\n\n");
 	return(0);
 }
 
@@ -401,84 +451,115 @@ int find_largest_set(int *array, int *node_count)
 			set_pos = array[index];
 		}
 	}
-	printf("This is set with most matches %d with count of %d\n", set_pos, high_set);
+	printf("This is set with most matches %d\n", set_pos);
 	return(0);
 }
 
-int neighbor_count_per_node(BST *array[], int *node_count, int **matrix)
+void neighbor_count_per_node(BST *array[], int *node_count, int **matrix)
 {
 
 	double removal, total_removal;
-	int return_val = -2;
 	int total_qualified_nodes = 0;
 	int neighbor_count = 0;
 	int node_removal = 1;
 	total_removal = 0;
 	while((total_removal / *node_count) < .50 && node_removal > 0){
-		if(return_val != -2)
-			break;
+	//removal =  0
 		for(int row = 0; node_removal != 0 && row < *node_count; row++){
 			removal = 0;
 			for(int column = 0;  column < *node_count; column++){
 				if(matrix[row+1][column+1] == 1){
 					neighbor_count++;
+					//total_removal += removal;
 				}
 			}
 			array[row]->connected = neighbor_count;
-			if(array[row] -> connected > 0 && array[row]-> connected < 2){
+			//printf("This is array row count %d\n", array[row]->connected);
+			//printf("This is DEBUG OF function: neighbor count %d\n", neighbor_count);
+			//printf("This is array to be removed %d\n", array[row]->id);
+			if(neighbor_count < 2){
 				removal++;
 				total_removal++;
 			}
 			neighbor_count = 0;
 			if(removal > 0){
 				if(((removal / *node_count) < .50) && ((total_removal / *node_count) < .50)){
+			//		printf("Removing array %d\n", array[row]->id);
 					node_neighbor_removal(row + 1, node_count, matrix);
-					array[row]->connected = -1;
 				}else{
-					printf("To many nodes to remove, ratio is %lf, might want to add nodes instead\n", total_removal / *node_count);
+					printf("To many nodes to remove, might want to add nodes instead\n");
 					node_removal = 0; 
-					return_val = -1;
-					break;
-				}
-			
-			}else{
-				int count = 0;
-				for(int i = 0; i < *node_count; i++){
-					if((array[i]->connected < 2 && array[i]->connected > 0) || array[i]->connected < -1){ //still nodes to be checked for removal
-						count++;
-					}
-				}
-				if(count > 0){
-					return_val = -2;
-				}else{
-					return_val = 1;
-					node_removal = 0;
 					break;
 				}
 			}
-
+		}
+		//printf("DEBUG before for looop\n");
+		for(int i = 0; i < *node_count; i++){
+			if(array[i]->connected >=2){
+				total_qualified_nodes++;
+			}
+		}
+		//printf("This is total_qualified_nodes %d\n", total_qualified_nodes);
+		if(total_qualified_nodes == *node_count){
+			printf("All nodes have at least two neighbors\n");
+			node_removal = 0;
+			break;
+		}else{
+			total_qualified_nodes = 0;
 		}
 	}
-	for(int i = 0; i < *node_count; i++){
-		if(array[i]->connected >=2 || array[i]->connected == -1){
-			total_qualified_nodes++;
-		}
-	}
-	if(total_qualified_nodes == *node_count){
-		printf("All zergs are in position.\n");
-		node_removal = 0;
-		return_val = 1;
-	}else{
-		total_qualified_nodes = 0;
-		return_val = 0;
-	}
-
-	return return_val;
 }
-
+	/*static double total_removal;
+	double removal;
+	int nodes = 1;
+	int neighbor_check;
+	//int removal_num = 0;
+	while(nodes > 0 && (total_removal / *node_count) > .50 ){
+		neighbor_check = 0;
+		for(int i = 0; i < *node_count; i++){
+			int count = 0;
+			//printf("This is count variable %d\n");
+			for(int j = 0; j < *node_count; j++){
+				if(matrix[i+1][j+1] == 1){
+					printf("This is matrix variable %d\n", matrix[i+1][j+1]);
+					count++;
+					//removal_num++;
+				}else{
+					;
+				}
+			}
+			array[i]->connected = count;
+			printf("This is nodes connectivity %d for array[i]: %d\n", array[i]->connected, array[i]->id);
+			//printf("Array node %d and amount of edges %d\n", array[i]->id, array[i]->connected);
+			//printf("node connectivity:  %d\n", array[i]->connected);
+		}
+		for(int i = 0; i < *node_count; i++){
+			if(array[i]->connected >= 2){
+				neighbor_check++;
+			}
+		}
+		if(neighbor_check == *node_count){
+			nodes = 0;
+			printf("Nodes should not be 0 anymore\n");
+			break;
+		}else{
+			printf("Before Removal statement\n");
+			removal = node_neighbor_removal(array, node_count, matrix);
+			if(removal >= 0 && removal <= .001){
+				nodes = 0;
+				printf("No more nodes to remove\n");
+				break;
+			}else{
+				printf("This is removal number %lf\n", removal);
+				break;
+			}
+		}	//return removal_num;
+		printf("After last big else in function after removal run\n");
+	}
+}
+*/
 int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_count, int **matrix)
 {
-	int count = 0;
 	int largest_set_size = 0;
 	for(int i = 0; i < *node_count; i++){
 		if(set_pos == set_array[i]){
@@ -487,28 +568,73 @@ int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_coun
 	}
 	if((largest_set_size / *node_count) < .50){
 		printf("To many nodes to remove based on reachability may want to add nodes instead\n");
-		return(-1); // 0 indicates nothing removed
+		return(0); // 0 indicates nothing removed
 	}
 	for(int i = 0; i < *node_count; i++){
 		if(set_array[i] != set_pos){
-			node[i]->connected = -1;
+			node[i]->connected = 0;
 			node_neighbor_removal(i+1, node_count, matrix);
-			count = 1; // a node was removed
 		}
 	}
-	// 0 means no nodes removed so set is good
-	return(count);
+	return(1);
 }
 
 void node_neighbor_removal(int row, int *node_count, int **matrix)
 {
+//	static int function_call = 0
+
+	//for(int row = 0; row < *node_count; row++){
+	//	int count = 0;
+	//	for(int column = 0; column < *node_count; column ++){
+	//		if(matrix[row+1][column+1] == 1){
+	//			count++;
+	//		}else{
+	//			;
+	//		}
+	//	}
+	//	array[row]->connected = count;
+	//}
+	int num;
 	for(int column = 0; column < *node_count; column++){
 		matrix[row][column+1] = -1;
 		matrix[column+1][row] = -1;
 	}
+	//return(removal);
 
+}  // added this stuff in the end
+//	printf("Amount to be removed %lf\n", removal);
+//	printf("This is node count %d\n", *node_count);
+//	printf("This is removal / *node_count: %.3lf\n", removal / *node_count);
+//	if(((removal / *node_count) >= .5) || ((total_removed / *node_count) >= .5)){
+//		printf("All nodes do not have enough neighbors.  But removal would cause more than 50%% of nodes to be removed\n");
+//		printf("Might want to add nodes instead\n");
+//	}else if(((removal / *node_count) > 0) && ((total_removed / *node_count) >= 0)){
+/*		for(int i = 0; i < *node_count; i++){
+			if(array[i]-> connected < 2 && array[i]->connected > 0){
+				//array[i]->connected = 0;
+				for(int j = 0; j < *node_count + 1; j++){
+					array[i]->connected = 0;
+					matrix[i+1][j + 1] = -1;
+					if(j < *node_count){
+						matrix[j][i+1] = -1;
+					}else{
+						break;
+					}
+				}
+			}
+		}
+		printf("This is print statement\n");
+	}else{
+		printf("This is final else statement\n");
+		printf("This is removal numbers for total removed %lf\n", total_removed);
+		;
+		//do nothing
+		//return(removal);
+	}
+	printf("Function call %d\n", function_call);
+	return(removal);
 }
-
+*/
 void init_array(BST **nodes, BST *root, int *count)
 {
 	static int i = 0;
@@ -532,23 +658,26 @@ double haversine_formula(double longitude1, double latitude1, double altitude1, 
 	double distance;
 	double radius;
 	radius = 6371 * 1000;
-
 	double lat_change;
 	lat_change = ((M_PI/180) * (latitude2 - latitude1));
 	lat_change = sin(lat_change/2) * sin(lat_change/2);
-
+	//printf("This is latitude2 %lf\n", latitude2);
+	//printf("This is lat_change %lf\n", lat_change);
 	double long_change;
 	long_change = ((M_PI/180) * (longitude2 - longitude1));
 	long_change = sin(long_change/2) * sin(long_change/2);
-
+	//printf("This is difference of longitude %lf\n", longitude2 - longitude1);
+	//printf("This is difference of long divided by 2 %lf\n", (longitude2 - longitude1)/2);
+	//printf("This is long change %lf\n", long_change);
 	double inside_radical;
+	//printf("This is inside radical %lf\n", inside_radical);
 	inside_radical = lat_change + (cos(latitude1) * cos(latitude2) * long_change);
+	//printf("This is inside radical %lf\n", inside_radical);
 	distance = (2 * radius) * asin(sqrt(inside_radical));
-
 	double altitude_change;
 	altitude_change = fabs(altitude2 - altitude1);
+	//change altitude to meters from fathoms
 	altitude_change = altitude_change * ((6 * 12)/39.37);
-
 	double true_distance; 
 	true_distance = sqrt((distance * distance) + (altitude_change * altitude_change));
 	return true_distance;
@@ -557,29 +686,42 @@ double haversine_formula(double longitude1, double latitude1, double altitude1, 
 
 void inorder(BST *root, int *count)
 {
+	//static *count;
+	//printf("This is count %d\n", *count);
+	//printf("This is inorder function");
+	//printf("This is in function\n");
 	if(root != NULL){
+		//printf("BEFORE COUNT \n");
+		//(*count) += 1;
+		//printf("This is count %d\n", *count);
+		//printf("This is count %d\n", *count);
 		inorder(root->left, count);
 		(*count) += 1;
-		//printf("ID %d", root->id);
-		//if(fabs(root->latitude) <= 90){
-		//	printf(" lat %lf", root->latitude);
-		//}
-		//if(fabs(root->longitude) <= 180){
-		//	printf(" long %lf", root->longitude);
-		//}
-		//if(root->hp > 0){
-		//	printf(" maxhp %d", root->maxhp);
-		//}
-		//if(root->maxhp > 0){
-		//	printf(" hp %d", root->hp);
-		//}else{
-		//	printf("\n");
-		//}
-		//printf("\n");
+		//if(fabs(root->latitude) <= 90)){
+		printf("ID %d", root->id);
+		if(fabs(root->latitude) <= 90){
+			printf(" lat %lf", root->latitude);
+		}
+		if(fabs(root->longitude) <= 180){
+			printf(" long %lf", root->longitude);
+		}
+		if(root->hp > 0){
+			printf(" maxhp %d", root->maxhp);
+		}
+		if(root->maxhp > 0){
+			printf(" hp %d", root->hp);
+		}else{
+			printf("\n");
+		}
+		printf("\n");
 
 		
 		inorder(root->right, count);
 	}
+	//if(*my_count == 0){
+	//	printf("Error not enough nodes\n");
+	//}
+	//printf("This is value of count %d\n", *count);
 }
 
 void tree_insert(struct BinarySearchTree *root, double longitude, double altitude, double latitude, int id, int hp, int maxhp, int type)
@@ -589,6 +731,7 @@ void tree_insert(struct BinarySearchTree *root, double longitude, double altitud
 			tree_insert(root->left, longitude, altitude, latitude, id, hp, maxhp, type);
 		}else{
 			root->left = init_tree(longitude, altitude, latitude, id, hp, maxhp);
+			printf("this is id after recursive call %d\n", root->left->id);
 
 		}
 	}
@@ -597,9 +740,10 @@ void tree_insert(struct BinarySearchTree *root, double longitude, double altitud
 			tree_insert(root->right, longitude, altitude, latitude, id, hp, maxhp, type);
 		}else{
 			root->right = init_tree(longitude, altitude, latitude, id, hp, maxhp);
+			//printf("This is id %d\n", root->right->id);
 		}
 	}else{
-		//printf("root->id %d and zergSourceID %d should be the same\n", root->id, id);
+		printf("root->id %d and zergSourceID %d should be the same\n", root->id, id);
 		return;
 	}
 }
@@ -615,7 +759,6 @@ struct BinarySearchTree *init_tree(double longitude, double altitude, double lat
 	t->id = id;
 	t->hp = hp;
 	t->maxhp = maxhp;
-	t->connected = -5;
 	return(t);
 }
 
@@ -626,7 +769,7 @@ long unsigned swap32(long unsigned val)
 }
 
 
-/*char *zergBreed(int breedType)
+char *zergBreed(int breedType)
 {
 	char *word = malloc(11 * sizeof(char));
 	word[0] = '\0';
@@ -687,7 +830,7 @@ long unsigned swap32(long unsigned val)
 	}
 	printf("This is word again %s\n", word);
 	return(word);
-}*/
+}
 
 uint64_t ntoh64(uint8_t number[8])
 {
@@ -764,6 +907,9 @@ int endLength(uint32_t packet, FILE *fp)
 }
 
 
+
+
+
 /////////////////////////
 
 //int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
@@ -796,3 +942,10 @@ void make_set_array(int *set_array, int *node_count, int **matrix)
 		}
 	}
 }
+	//printf("These are updated sets\n");
+	//for(int i = 0; i < *my_count; i++){
+	//	printf("%d", set_array[i]);
+	//}
+
+	// remove zergs based on reachability and or sets
+	//printf("\n This is after sets printed out\n");

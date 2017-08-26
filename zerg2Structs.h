@@ -83,6 +83,7 @@ typedef struct BinarySearchTree{
 	double longitude;
 	int id;
 	int hp;
+	int connected = -5;
 	int maxhp;
 	struct BinarySearchTree *left;
 	struct BinarySearchTree *right;
