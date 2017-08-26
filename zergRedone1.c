@@ -28,12 +28,15 @@ int GetVersion(FILE *fp);
 double haversine_formula(double longitude1, double latitude1, double altitude1, double longitude2, double latitude2, double altitude2);
 //void checkTree(struct BinarySearchTree **root, double longitude, double altitude, double latitude, int id, int type, int hp, int maxhp);
 void init_array(BST **nodes, BST *root, int *count);
-int neighbor_count_per_node(BST *array[], int *node_count, int **matrix);
+int two_neighbors_per_node(int *node_count, int **matrix);
 void node_neighbor_removal(int row, int *node_count, int **matrix);
 void make_set_array(int *set_array, int *node_count, int **matrix, BST *node[]);
 int find_largest_set(int *array, int *node_count);
 void print_matrix(int **matrix, int *node_count);
 int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_count, int **matrix);
+int remove_node(int *node_count, BST *nodes[], int row, int **matrix);
+int which_node_to_remove(int *node_count, BST *nodes[], int **matrix);
+void print_hp(double hp_threshold, BST *nodes[], int *node_count);
 
 int main(int argc, char *argv[])
 {
@@ -236,13 +239,15 @@ int main(int argc, char *argv[])
 		nodes[i] = malloc(sizeof(struct BinarySearchTree));
 	}
 	init_array(nodes, root, my_count);
-
-		printf("Below health (%lf%%)\n", (hp_threshold * 100));
-		for(int i = 0; i < *my_count; i++){
-			if(nodes[i]-> hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
-				printf("zerg #%d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
-			}
-		}
+	////////////////////// HP print going to try and make a function	
+	//	printf("Below health (%lf%%)\n", (hp_threshold * 100));
+	//	for(int i = 0; i < *my_count; i++){
+	//		if(nodes[i]-> hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
+	//			printf("zerg #%d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
+	//		}
+	//	}
+	print_hp(hp_threshold, nodes, my_count);
+	//////////////// HP print gonna try to make a function look above
 	//look above for this
 
 	double distance;
@@ -323,18 +328,54 @@ int main(int argc, char *argv[])
 	make_set_array(set_array, my_count, adjacency, nodes);
 	int set_pos;
 	set_pos = find_largest_set(set_array, my_count); //this returns set position
+	printf("this is set position %d\n");
 	removed = remove_smallest_set(set_array, set_pos, nodes, my_count, adjacency);
 	//printf("Set to be removed\n");
-	neighbors = neighbor_count_per_node(nodes, my_count, adjacency);
+	printf("This is removed variable %d\n", removed);
+	neighbors = 1;
+	int removal_node;
+	while(neighbors == 1){
+		neighbors = two_neighbors_per_node(my_count, adjacency);
+		
+		if(neighbors != 1){
+			break;
+		}
+		removal_node = which_node_to_remove(my_count, nodes, adjacency);
+		if(removal_node == -1){
+			neighbors = removal_node;
+			printf("to many nodes to remove\n");
+		}
+	}
+//	printf("This is neighbors variable %d and which node to remove %d\n", neighbors, removal_node);
 	if(removed == 0 && neighbors == 1){
 		for(int i = 0; i < *my_count; i++){
-			if(nodes[i]-> connected == -1){
+			if(nodes[i]-> removed == -1){
 				printf("ZERG ID #%d removed\n", nodes[i]->id);
 			}else{
 				continue;
 			}
 		}
 	}
+	else if(removed == 0){
+		for(int i = 0; i < *my_count; i++){
+			if(nodes[i]->removed_from_set == 1){
+				printf("Zerg ID #%d reomoved\n", nodes[i]->id);
+			}
+		}
+	}
+	else if(removed == 1 && neighbors == 0){
+		// may want to try to check for disjoint sets here
+		printf("All zerg are in position ");
+	}
+	else if(removed == 1 && neighbors == 2){
+		printf("Some were removed and balanced now");
+		for(int i = 0; i < *my_count; i++){
+			if(nodes[i]->removed == -1){
+				printf("Zerg ID #%d removed\n", nodes[i]->id);
+			}
+		}
+	}
+	print_hp(hp_threshold, nodes, my_count);
 	print_matrix(adjacency, my_count); 
 
 	//printf("These are updated sets\n");
@@ -401,97 +442,199 @@ int find_largest_set(int *array, int *node_count)
 			set_pos = array[index];
 		}
 	}
-	printf("This is set with most matches %d with count of %d\n", set_pos, high_set);
+	//printf("This is set with most matches %d with count of %d\n", set_pos, high_set);
 	return(0);
 }
 
-int neighbor_count_per_node(BST *array[], int *node_count, int **matrix)
+void print_hp(double hp_threshold, BST *nodes[], int *node_count)
+{
+	printf("Below health (%lf%%)\n", (hp_threshold * 100));
+	for(int i = 0; i < *node_count; i++){
+		if(nodes[i]->hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
+			printf("zerg# %d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
+		}
+	}
+}
+
+int two_neighbors_per_node(int *node_count, int **matrix)
 {
 
-	double removal, total_removal;
-	int return_val = -2;
-	int total_qualified_nodes = 0;
-	int neighbor_count = 0;
+	//double removal, total_removal;
+	//int return_val = -2;
+	//int total_qualified_nodes = 0;
 	int node_removal = 1;
-	total_removal = 0;
-	while((total_removal / *node_count) < .50 && node_removal > 0){
-		if(return_val != -2)
-			break;
-		for(int row = 0; node_removal != 0 && row < *node_count; row++){
-			removal = 0;
-			for(int column = 0;  column < *node_count; column++){
+	int good_row;
+	int neighbor_count = 0;
+	//int node_removal = 1;
+	//int removal_check;
+	//total_removal = 0;
+	//removal = 0;
+	while( node_removal > 0){
+		for(int row = 0; row < *node_count; row++){
+			neighbor_count = 0;
+			for(int column = 0; column < *node_count; column++){
 				if(matrix[row+1][column+1] == 1){
 					neighbor_count++;
 				}
 			}
-			array[row]->connected = neighbor_count;
-			if(array[row] -> connected > 0 && array[row]-> connected < 2){
+			if(neighbor_count >= 2){
+				good_row++;
+			}else if(neighbor_count == 1){
+				printf("neighbor count is 1\n");
+				return(1);
+			}
+		}
+		if(good_row == *node_count){
+			node_removal = 0;
+			return(0);
+		}
+		else if(((double)(good_row / *node_count)) > .50){
+			printf("some nodes removed\n");
+			node_removal = 0;
+			return(2);
+		}else{
+			printf("No connections at all\n");
+			node_removal = 0;
+			return(-1);
+		}
+	}
+	return(-1);
+}
+
+/*			array[row]->connected = neighbor_count;
+			//neighbor_count = 0;
+			printf("This is neighbor check\n");
+			if(array[row]->connected == 1 || neighbor_count == 1){
+				neighbor_count = 0;
+				printf("This is before removal\n");
 				removal++;
 				total_removal++;
-			}
-			neighbor_count = 0;
-			if(removal > 0){
-				if(((removal / *node_count) < .50) && ((total_removal / *node_count) < .50)){
-					node_neighbor_removal(row + 1, node_count, matrix);
-					array[row]->connected = -1;
-				}else{
-					printf("To many nodes to remove, ratio is %lf, might want to add nodes instead\n", total_removal / *node_count);
-					node_removal = 0; 
-					return_val = -1;
-					break;
+				return_val = check_for_removal(removal, total_removal, node_count, array, row, matrix);
+				printf("This is return value after check for removal function %d\n", return_val);
+				removal = 0;
+				if(return_val == 0){
+					node_removal = 0;
 				}
-			
 			}else{
-				int count = 0;
-				for(int i = 0; i < *node_count; i++){
-					if((array[i]->connected < 2 && array[i]->connected > 0) || array[i]->connected < -1){ //still nodes to be checked for removal
+				continue;
+			}
+		}
+		int total_count = 0;
+		int count;
+		for(int row = 0; return_val != -1 && row < *node_count; row++){
+			count = 0;
+			printf("count is at 0 \n");
+			for(int i = 0; i < *node_count; i++){
+				printf("This is array i connected number %d and id %d\n", array[row]->connected, array[row]->id);
+				if(matrix[row+1][i+1] == 1){
+					//printf("going for another go around\n");
+					if(count < 2){
 						count++;
 					}
+					//printf("number of connections for this node based on count %d\n", count);
+
 				}
-				if(count > 0){
-					return_val = -2;
-				}else{
-					return_val = 1;
-					node_removal = 0;
-					break;
+				printf("This is i variable %d\n", i);
+				//printf("This is total count before the increment %d\n", total_count);
+				if(count >= 2){
+					printf("This is total count before the increment %d\n", total_count);
+					printf("count is more than two so increment total_count\n");
+					total_count++;
+					printf("This is total count after increment %d\n", total_count);
 				}
 			}
+			printf("This is count before it resets to 0 %d\n", count);
+			printf("Number of connections for noded %d based on count %d\n", array[row]->id, count);
+			printf("THIS IS NODE COUNT %d AND TOTAL_COUNT %d\n", *node_count, total_count);
+			if(count == 1){
+				printf("count == 1\n");
+				return_val = -2;
+				break;
+			}else if(total_count == *node_count){
+				printf("DEBUG STATEMENT\n");
+				//return_val = 0;
+				node_removal = 0;
+				break;
+			}
+		}
 
+		printf("This is node removal else statement\n return value equals %d\n", return_val);
+		if(return_val != -1 && return_val != -2){
+			printf("All Zergs in position.\n");
+			node_removal = 0;
+			//return_val = 1;
+			break;
+		}else if(return_val == -1){
+			node_removal = 0;
+			break;
 		}
 	}
-	for(int i = 0; i < *node_count; i++){
-		if(array[i]->connected >=2 || array[i]->connected == -1){
-			total_qualified_nodes++;
+
+	printf("This is return value before return %d\n", return_val);
+	return(return_val);
+}
+*/
+int which_node_to_remove(int *node_count, BST *nodes[], int **matrix)
+{
+	int neighbor;
+	int return_val = 0;
+	for(int row = 0; row < *node_count; row++){
+		neighbor = 0;
+		for(int column = 0; column < *node_count; column++){
+			if(matrix[row+1][column+1] == 1){
+				neighbor++;
+			}
+		}
+		if(neighbor == 1 && return_val != -1){
+			return_val = remove_node(node_count, nodes, row, matrix);
 		}
 	}
-	if(total_qualified_nodes == *node_count){
-		printf("All zergs are in position.\n");
-		node_removal = 0;
-		return_val = 1;
+	return(return_val);
+}
+
+int remove_node(int *node_count, BST *nodes[], int row, int **matrix)
+{
+	static double total_removal = 0;
+	total_removal++;
+	int return_val;
+	if((total_removal / *node_count) < .50){
+		//total_removal++;
+		node_neighbor_removal(row + 1, node_count, matrix);
+		nodes[row]->connected = -1;
+		nodes[row]->removed = -1;
+		return_val = -2;
 	}else{
-		total_qualified_nodes = 0;
-		return_val = 0;
+		//evaluate if statement still made
+		//printf("To many nodes to remove. Might want to add nodes instead\n");
+		return_val = -1;
 	}
-
-	return return_val;
+	return(return_val);
 }
 
 int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_count, int **matrix)
 {
 	int count = 0;
-	int largest_set_size = 0;
+	double largest_set_size = 0;
 	for(int i = 0; i < *node_count; i++){
 		if(set_pos == set_array[i]){
 			largest_set_size++;
 		}
 	}
-	if((largest_set_size / *node_count) < .50){
+	//printf("The largest set size is %lf\n", largest_set_size);
+	//printf("This is node_count %d\n", *node_count);
+	//printf("This is largest set size divided by node_count %lf\n", largest_set_size / *node_count);
+	if((largest_set_size / *node_count) > .50 && (largest_set_size / *node_count > 1.00 || largest_set_size / *node_count < 1.00)){
 		printf("To many nodes to remove based on reachability may want to add nodes instead\n");
 		return(-1); // 0 indicates nothing removed
+	}
+	else if((int)largest_set_size == *node_count){
+		return(1);
 	}
 	for(int i = 0; i < *node_count; i++){
 		if(set_array[i] != set_pos){
 			node[i]->connected = -1;
+			node[i]->removed = -1;
+			node[i]->removed_from_set = 1;
 			node_neighbor_removal(i+1, node_count, matrix);
 			count = 1; // a node was removed
 		}
@@ -615,6 +758,8 @@ struct BinarySearchTree *init_tree(double longitude, double altitude, double lat
 	t->id = id;
 	t->hp = hp;
 	t->maxhp = maxhp;
+	t->removed = 0;
+	t->removed_from_set = 0;
 	t->connected = -5;
 	t->globalPosition = '1';
 	return(t);
@@ -817,3 +962,4 @@ void make_set_array(int *set_array, int *node_count, int **matrix, BST *nodes[])
 		}
 	}
 }
+

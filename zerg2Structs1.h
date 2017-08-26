@@ -82,9 +82,12 @@ typedef struct BinarySearchTree{
 	double altitude;
 	double latitude;
 	double longitude;
+	char globalPosition;
 	int id;
 	int hp;
 	int maxhp;
+	int removed;
+	char removed_from_set;
 	int connected; //1 = fully connected node, 0 means not fully connected node
 	struct BinarySearchTree *left;
 	struct BinarySearchTree *right;
