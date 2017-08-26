@@ -78,6 +78,7 @@ typedef struct gpsDataPayload{
 
 
 typedef struct BinarySearchTree{
+	char globalPosition;
 	double altitude;
 	double latitude;
 	double longitude;

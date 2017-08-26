@@ -1,0 +1,2 @@
+gcc -Wall -Wextra -Wpedantic -Wwrite-strings -Wstack-usage=1024 -Wfloat-equal -Waggregate-return -Winline zergRedone1.c -o zergMap -lm
+makefile:6: recipe for target 'zergMap' failed

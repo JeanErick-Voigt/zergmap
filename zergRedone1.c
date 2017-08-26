@@ -30,7 +30,7 @@ double haversine_formula(double longitude1, double latitude1, double altitude1, 
 void init_array(BST **nodes, BST *root, int *count);
 int neighbor_count_per_node(BST *array[], int *node_count, int **matrix);
 void node_neighbor_removal(int row, int *node_count, int **matrix);
-void make_set_array(int *set_array, int *node_count, int **matrix);
+void make_set_array(int *set_array, int *node_count, int **matrix, BST *node[]);
 int find_largest_set(int *array, int *node_count);
 void print_matrix(int **matrix, int *node_count);
 int remove_smallest_set(int *set_array, int set_pos, BST *node[], int *node_count, int **matrix);
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 	int removed, neighbors;
 	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
 // try the function instead of this above to set array
-	make_set_array(set_array, my_count, adjacency);
+	make_set_array(set_array, my_count, adjacency, nodes);
 	int set_pos;
 	set_pos = find_largest_set(set_array, my_count); //this returns set position
 	removed = remove_smallest_set(set_array, set_pos, nodes, my_count, adjacency);
@@ -616,6 +616,7 @@ struct BinarySearchTree *init_tree(double longitude, double altitude, double lat
 	t->hp = hp;
 	t->maxhp = maxhp;
 	t->connected = -5;
+	t->globalPosition = '1';
 	return(t);
 }
 
@@ -767,8 +768,25 @@ int endLength(uint32_t packet, FILE *fp)
 /////////////////////////
 
 //int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
-void make_set_array(int *set_array, int *node_count, int **matrix)
+void make_set_array(int *set_array, int *node_count, int **matrix, BST *nodes[])
 {
+	for(int i = 0; i < *node_count; i++){
+		if((fabs(nodes[i]->latitude) > 90) || (fabs(nodes[i]->longitude) > 180) || (fabs(nodes[i]->altitude) > 6160)){
+				nodes[i]->globalPosition = '0';
+		}else{
+			nodes[i]->globalPosition = '1';
+		}
+	}
+	int count = 0;
+	for(int i = 0; i < *node_count; i++){
+		if(nodes[i]->globalPosition == '0'){
+			count++;
+		}
+	}
+	if(count == *node_count){
+		printf("None of the nodes passed were passed with proper gps data. Can't graph it. program will exit.\n");
+		exit(1);
+	}
 	for(int i = 0; i < *node_count; i++){
 		set_array[i] = i;
 		//printf("%d\n", set_array[i]);
@@ -779,7 +797,7 @@ void make_set_array(int *set_array, int *node_count, int **matrix)
 			if((i + 1) == (j + 1)){
 				continue;
 			}else{
-				if(matrix[i+1][j+1] == 1){
+				if(matrix[i+1][j+1] == 1 && nodes[i]-> globalPosition == '1'){
 					if(set_array[i] < set_array[j]){
 						set_array[j] = set_array[i];
 						//printf("This is set_array j after reset value %d\n", set_array[j]);
@@ -790,6 +808,9 @@ void make_set_array(int *set_array, int *node_count, int **matrix)
 						continue;
 					}
 				}else{
+					if(nodes[i]->globalPosition == '0'){
+						set_array[i] = -1;
+					}
 					continue;
 				}
 			}
