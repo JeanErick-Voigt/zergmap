@@ -1,3 +1,5 @@
+#include <netinet/in.h>
+#include <byteswap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -189,11 +191,11 @@ int main(int argc, char *argv[])
 					fread(&gpsDataPayload, sizeof(gpsDataPayload), 1, fp1);
 					uint64_t lat = ntoh64(gpsDataPayload.latitude);
 					newLat = (double)convert64ToDouble(lat);
-
+					printf("This is latitude %lf\n", newLat);
 					uint64_t longitude = ntoh64(gpsDataPayload.longitude);
 					//printf("This is longitude %ld\n", longitude);
 					newLong = (double)convert64ToDouble(longitude);
-					//printf("This is longitude %lf\n", newLong);
+					printf("This is longitude %lf\n", newLong);
 
 					uint32_t altitude = NTOH4(gpsDataPayload.altitude);
 					alt32 = (double)convert32ToDouble(altitude);
@@ -240,12 +242,15 @@ int main(int argc, char *argv[])
 	}
 	init_array(nodes, root, my_count);
 	////////////////////// HP print going to try and make a function	
-	//	printf("Below health (%lf%%)\n", (hp_threshold * 100));
-	//	for(int i = 0; i < *my_count; i++){
-	//		if(nodes[i]-> hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
-	//			printf("zerg #%d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
-	//		}
-	//	}
+		printf("Below health (%lf%%)\n", (hp_threshold * 100));
+		for(int i = 0; i < *my_count; i++){
+			printf("This is node %d,  hp %d nodes maxhp %d and hp_threshold %lf\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp,
+				hp_threshold);
+			if(nodes[i]-> hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
+				printf("REMOVED ZERG #%d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
+			}
+		}
+	printf("printing hp below debug debug\n\n");
 	print_hp(hp_threshold, nodes, my_count);
 	//////////////// HP print gonna try to make a function look above
 	//look above for this
@@ -301,6 +306,9 @@ int main(int argc, char *argv[])
 				//	nodes[i - 1]->altitude, nodes[j-1]->longitude, nodes[j-1]->latitude, nodes[j-1]->altitude);
 				distance = haversine_formula(nodes[i-1]->longitude, nodes[i-1]->latitude, nodes[i-1]->altitude,
 					nodes[j-1]->longitude, nodes[j-1]->latitude, nodes[j-1]->altitude);
+				printf("This is node %d longitude %lf, latitude %lf and altitude %lf\n", nodes[j-1]->id, nodes[j-1]->longitude, nodes[j-1]->latitude, nodes[j-1]->altitude);
+				printf("This is node %d longitude %lf, latitude %lf and altitude %lf\n", nodes[i-1]->id, nodes[i-1]->longitude, nodes[i-1]->latitude, nodes[i-1]->altitude);
+				printf("This is distance between node[i] %d and node[j] %d --> %lf\n", nodes[j-1]->id, nodes[i-1]->id, distance);
 				if(distance >= (1.25000 * .9144) && distance <= 15.00000){
 					adjacency[i][j] = 1;
 				//	printf("This is distance %lf\n", distance);
@@ -325,6 +333,8 @@ int main(int argc, char *argv[])
 	int removed, neighbors;
 	int *set_array = malloc(*my_count * sizeof(int));//for(int i = 0
 // try the function instead of this above to set array
+	printf("\n");
+	print_hp(hp_threshold, nodes, my_count);
 	make_set_array(set_array, my_count, adjacency, nodes);
 	int set_pos;
 	set_pos = find_largest_set(set_array, my_count); //this returns set position
@@ -368,14 +378,16 @@ int main(int argc, char *argv[])
 		printf("All zerg are in position ");
 	}
 	else if(removed == 1 && neighbors == 2){
-		printf("Some were removed and balanced now");
+		printf("Some were removed and balanced now\n");
 		for(int i = 0; i < *my_count; i++){
 			if(nodes[i]->removed == -1){
 				printf("Zerg ID #%d removed\n", nodes[i]->id);
 			}
 		}
 	}
+	printf("These are LOW ZERG DEBUG DEBUG \n");
 	print_hp(hp_threshold, nodes, my_count);
+	printf("\n");
 	print_matrix(adjacency, my_count); 
 
 	//printf("These are updated sets\n");
@@ -451,9 +463,10 @@ void print_hp(double hp_threshold, BST *nodes[], int *node_count)
 	printf("Below health (%lf%%)\n", (hp_threshold * 100));
 	for(int i = 0; i < *node_count; i++){
 		if(nodes[i]->hp < (hp_threshold * nodes[i]->maxhp) && nodes[i]->hp >= 0){
-			printf("zerg# %d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
+			printf("REMOVED ZERG# %d, hp: %d, maxhp: %d\n", nodes[i]->id, nodes[i]->hp, nodes[i]->maxhp);
 		}
 	}
+	printf("\n\n");
 }
 
 int two_neighbors_per_node(int *node_count, int **matrix)
@@ -677,21 +690,42 @@ double haversine_formula(double longitude1, double latitude1, double altitude1, 
 	radius = 6371 * 1000;
 
 	double lat_change;
-	lat_change = ((M_PI/180) * (latitude2 - latitude1));
-	lat_change = sin(lat_change/2) * sin(lat_change/2);
+	latitude1 *= M_PI/180;
+	latitude2 *= M_PI/180;
+	longitude1 *= M_PI/180;
+	longitude2 *= M_PI/180;
+
+
+
+	lat_change = (latitude2 - latitude1) / 2;
+	printf("This is lat_change %lf\n", lat_change);
+	lat_change = (sin(lat_change) * sin(lat_change));
+	printf("Sin squared of lat_change %lf\n", lat_change);
+	
+	//lat_change = sin(lat_change/2) * sin(lat_change/2);
 
 	double long_change;
-	long_change = ((M_PI/180) * (longitude2 - longitude1));
-	long_change = sin(long_change/2) * sin(long_change/2);
-
-	double inside_radical;
-	inside_radical = lat_change + (cos(latitude1) * cos(latitude2) * long_change);
-	distance = (2 * radius) * asin(sqrt(inside_radical));
+	long_change = (longitude2 - longitude1) / 2;
+	printf("This is long_change %lf\n", long_change);
+	//long_change = sin(long_change/2) * sin(long_change/2);
+	long_change = (sin(long_change) * sin(long_change));
+	printf("sin squared of long_change %lf\n", long_change);
+	double a;
+	a = lat_change + (cos(latitude1) * cos(latitude2) * long_change);
+	printf("This is value of a: %lf", a);
+	double c;
+	c = 2 * atan2(sqrt(a), sqrt(1-a));
+	printf("This is value of c %lf\n", c);
+	
+	distance = radius * c;
+	printf("This is distance before conversion %lf\n", distance);
+	//inside_radical = lat_change + (cos(latitude1) * cos(latitude2) * long_change);
+	//distance = (2 * radius) * asin(sqrt(inside_radical));
 
 	double altitude_change;
 	altitude_change = fabs(altitude2 - altitude1);
-	altitude_change = altitude_change * ((6 * 12)/39.37);
-
+	//altitude_change = altitude_change * ((6 * 12)/39.37);
+	altitude_change *= 1.8288; //try this conversion
 	double true_distance; 
 	true_distance = sqrt((distance * distance) + (altitude_change * altitude_change));
 	return true_distance;
@@ -757,6 +791,7 @@ struct BinarySearchTree *init_tree(double longitude, double altitude, double lat
 	t->latitude = latitude;
 	t->id = id;
 	t->hp = hp;
+	printf("This is node hp %d\n", hp);
 	t->maxhp = maxhp;
 	t->removed = 0;
 	t->removed_from_set = 0;
@@ -870,17 +905,31 @@ int hexToDec(int x)
 //credit to Daniel Roberts
 double convert64ToDouble(uint64_t num)
 {
+	//if need to revert delete the htonl one and uncomment all these
 	uint8_t sign;
 	uint16_t exponent;
 	uint64_t mantissa;
 	double result = 0;
+	int neg_or_pos;
 
 	sign = num >> 63;
+	if(sign == 1){
+		neg_or_pos = -1;
+	}else{
+		neg_or_pos = 1;
+	}
+	printf("Sign of number is %d\n", sign);
 	exponent = (num >> 52 & 0x7FF) - 1023;
 	mantissa = num & 0xFFFFFFFFFFFFF;
 	result = (mantissa *pow(2, -52)) + 1;
 	result *= pow(1, sign) * pow(2, exponent);
-	return(result);
+	return(result * neg_or_pos);
+	// Try below instead to see if can get negative values
+	//uint32_t high_part = htonl((uint32_t)(num >> 32));
+	//uint32_t low_part = htonl(((uint32_t)(num & 0xFFFFFFFFLL)));
+	//mantissa = (((uint64_t)low_part) << 32) | high_part;
+	//result = (double)mantissa;
+	//return(result);
 
 }
 
@@ -889,13 +938,13 @@ double convert32ToDouble(uint32_t num)
 	uint8_t sign, exponent;
 	uint32_t mantissa;
 	double result = 0;
-	if(num > 0){	
+	if(num > 0){
 		sign = num >> 31;
 		exponent = (num >> 23 & 0xFF) - 127;
 		mantissa = num & 0x7FFFFF;
 		result = (mantissa *pow(2, -23)) + 1;
 		result *= pow(1, sign) * pow(2, exponent);
-	}	
+	}
 	return(result);
 }
 
@@ -929,6 +978,7 @@ void make_set_array(int *set_array, int *node_count, int **matrix, BST *nodes[])
 		}
 	}
 	if(count == *node_count){
+		//print_hp(hp_threshold, nodes, node_count);
 		printf("None of the nodes passed were passed with proper gps data. Can't graph it. program will exit.\n");
 		exit(1);
 	}
