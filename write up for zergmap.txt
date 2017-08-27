@@ -1,0 +1,63 @@
+﻿Name: Jean-Erick Voigt
+Date: 27 August 2017
+Current Module: DSA_II Final Project
+Project Name: zergmap
+	
+
+Project Goals:
+
+	Project was designed to evaluate our ability to use data structures and abstract data types that we went over in class.  We were tasked to take the zerg decoder that we used for our last project and determine if the zerglings were within a predetermined range of 2.5yds - 15 meters, in order to be connected.  We had to decide which zergs to remove and or add in order to achieve a fully connected zerg graph.  This consisted of every node have two edges and two mutually exclusive ways to get from any node start point to any node end point.  In addition, we needed to to be able to read command line arguments that would request the printing of zergs below a hp threshold percentage.  This program is expected to either gracefully exit or attempt to resolve any entry of faulty data, while giving the user as much detail as possible as to what caused the problem. 
+	
+
+Considerations:
+	
+
+	<A bulleted list of considerations and conditions which affected the design of your project>
+	
+
+	* File input
+	* Getopt for flags on command line
+	* Binary search tree
+   	* Count of nodes in tree
+	* Structures
+	* Fread, fseek, ftell
+	* Graph theory
+   	* Adjacency matrix
+	* Array of pointers to structs
+	* Edge case:
+ 	* Faulty gps data and or hp packets
+   	* Faulty hp flags
+   	* Incorrect command line flags
+   	* Add nodes instead of remove to make the resonance
+   	* Two disjoint
+	
+Initial Design:
+
+
+        This program was split into two modules.  The header module contained the structures in order to read the data from the pcaps. The main module contained the driver and the code for the functions. 
+Data Flow:
+
+
+        Initially, I loop through the command line arguments in order to verify that there are enough arguments.  Program needs at least a file to be passed in order to work.  If no hp threshold passed then the default of 10% will be used.  The program goes through a loop until it reaches the end of the file.  While doing so, it pulls the requisite data from the fields and stores them in struct members for later use.  If bad gps data or no gps data is passed, program will gracefully exit.  If hp is set to a faulty value such as a negative value it will not consider it a valid hp.  After the program finishes looping through the pcaps (able to take multiple pcaps) it will then store all the data in a malloced BST.  It uses this data in the BST and gets the haversine distance.  If distance is within the range it automatically connects the nodes.  The program puts all nodes in an adjacency matrix and uses this to decipher if they are connected or not.  
+
+Communication Protocol:
+
+
+        <Discuss any custom communication protocol you have used including the various request and responses that may be sent and received.>
+Program must convert data from Host to network and vice versa in order to decipher the custom communication that the zerg packet and payload uses.
+
+
+Potential Pitfalls:
+
+Potential pitfalls are those with data that is fully connected, but only have one unique path.  This will not suffice to be fully zerg connected.  Also, the difficulty with adding nodes. 
+
+Test Plan:
+
+User Test:
+The professor provided test cases to model off of that checked for all connectivity, and partial connectivity.  Test cases with faulty information, such as gps information (out of range latitude, longitude, altitude) and out of range hp information. 
+
+Test Cases:
+
+Conclusion:
+
+The project gave me some trouble with adding nodes in the event that that was the only way to resolve getting a fully connected zerg.  Overall, this project helped to reinforce some things that we learned and work on things more.
