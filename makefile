@@ -2,8 +2,8 @@ CFLAGS=-Wall -Wextra -Wpedantic -Wwrite-strings -Wstack-usage=1024 -Wfloat-equal
 
 all: zergMap
 
-zergMap: zergRedone1.c
-	gcc $(CFLAGS) zergRedone1.c -o zergMap -lm
+zergMap: zergmap.c
+	gcc $(CFLAGS) zergmap.c -o zergMap -lm
 
 debug: CFLAGS += -g
 debug: all -lm
